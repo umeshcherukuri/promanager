@@ -608,14 +608,7 @@
         <div class="card">
             <h2>🔍 Search Products</h2>
             <input type="text" id="searchProduct" placeholder="Search..." style="width:100%; padding:12px; border-radius:40px; border:1px solid #e2e8f0;">
-            <div id="productsGrid" class="products-grid">
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-                <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
-            </div>
+            <div id="productsGrid" class="products-grid"></div>
         </div>
         <div class="card">
             <h2>🛒 Current Cart</h2>
@@ -636,48 +629,36 @@
         <div class="card"><h2>📋 Today's Transactions</h2><div id="dailyTransactionsList"></div></div>
     </div>
 
-<!-- SALES HISTORY PAGE -->
-<div id="historyPage" class="page">
-    <div class="stats-grid">
-        <div class="stat-card" id="totalAmountCard"><h4>💰 Total Amount</h4><div class="stat-number" id="allTimeTotal">₹0</div><div class="dropdown-icon">▼</div></div>
-        <div class="stat-card" id="totalItemsCard"><h4>📦 Total Items Sold</h4><div class="stat-number" id="totalItemsSoldCount">0</div><div class="dropdown-icon">▼</div></div>
-        <div class="stat-card"><h4>📆 Monthly Income</h4><div class="stat-number" id="monthlyIncomeTotal">₹0</div></div>
-    </div>
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <h2>🔍 Filter Transactions</h2>
-            <button id="downloadPDFBtn" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 600;">📄 Download PDF</button>
+    <!-- SALES HISTORY PAGE -->
+    <div id="historyPage" class="page">
+        <div class="stats-grid">
+            <div class="stat-card" id="totalAmountCard"><h4>💰 Total Amount</h4><div class="stat-number" id="allTimeTotal">₹0</div><div class="dropdown-icon">▼</div></div>
+            <div class="stat-card" id="totalItemsCard"><h4>📦 Total Items Sold</h4><div class="stat-number" id="totalItemsSoldCount">0</div><div class="dropdown-icon">▼</div></div>
+            <div class="stat-card"><h4>📆 Monthly Income</h4><div class="stat-number" id="monthlyIncomeTotal">₹0</div></div>
         </div>
-        <div class="filter-bar">
-            <input type="text" id="filterSearch" class="filter-input" placeholder="Search by customer or item...">
-            <select id="filterPrice" class="filter-select"><option value="">Sort by Price</option><option value="asc">Price Low to High</option><option value="desc">Price High to Low</option></select>
-            <select id="filterQuantity" class="filter-select"><option value="">Sort by Quantity</option><option value="asc">Quantity Low to High</option><option value="desc">Quantity High to Low</option></select>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h2>🔍 Filter Transactions</h2>
+                <button id="downloadPDFBtn" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 600;">📄 Download PDF</button>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="filterSearch" class="filter-input" placeholder="Search by customer or item...">
+                <select id="filterPrice" class="filter-select"><option value="">Sort by Price</option><option value="asc">Price Low to High</option><option value="desc">Price High to Low</option></select>
+                <select id="filterQuantity" class="filter-select"><option value="">Sort by Quantity</option><option value="asc">Quantity Low to High</option><option value="desc">Quantity High to Low</option></select>
+            </div>
+            <h2>📜 Transaction History</h2>
+            <div id="transactionsList"></div>
         </div>
-        <h2>📜 Transaction History</h2>
-        <div id="transactionsList"></div>
-    </div>
-    
-    <!-- DELETE SALES SECTION -->
-    <div class="card" style="background: linear-gradient(135deg, #fff5f5, #ffe0e0); margin-top: 20px;">
-        <h2 style="color: #dc2626;">🗑️ Delete Sales</h2>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px;">
-            <button id="deleteLastWeekBtn" style="background: #ea580c; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Week Sales</button>
-            <button id="deleteLastMonthBtn" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Month Sales</button>
-        </div>
-    </div>
-</div>
-
-<!-- <!-- Delete Confirmation Modal (Add this before the closing </body> tag) -->
-<div id="deleteConfirmModal" class="modal" style="display:none">
-    <div class="modal-content">
-        <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
-        <p id="deleteConfirmMessage" style="margin: 15px 0; font-size: 1rem;">Are you sure you want to delete these transactions?</p>
-        <div class="btn-group" style="margin-top: 20px;">
-            <button id="confirmDeleteBtn" style="background: #dc2626; padding: 10px 20px;">Yes, Delete</button>
-            <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
+        
+        <!-- DELETE SALES SECTION -->
+        <div class="card" style="background: linear-gradient(135deg, #fff5f5, #ffe0e0); margin-top: 20px;">
+            <h2 style="color: #dc2626;">🗑️ Delete Sales</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px;">
+                <button id="deleteLastWeekBtn" style="background: #ea580c; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Week Sales</button>
+                <button id="deleteLastMonthBtn" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Month Sales</button>
+            </div>
         </div>
     </div>
-</div> -->
 
     <!-- MY BILLS PAGE -->
     <div id="mybillsPage" class="page">
@@ -742,17 +723,19 @@
             </div>
         </div>
     </div>
-<!-- Delete Confirmation Modal -->
-<div id="deleteConfirmModal" class="modal" style="display:none">
-    <div class="modal-content">
-        <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
-        <p id="deleteConfirmMessage" style="margin: 15px 0; font-size: 1rem;">Are you sure you want to delete these transactions?</p>
-        <div class="btn-group" style="margin-top: 20px;">
-            <button id="confirmDeleteBtn" style="background: #dc2626; padding: 10px 20px;">Yes, Delete</button>
-            <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal" style="display:none">
+        <div class="modal-content">
+            <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
+            <p id="deleteConfirmMessage" style="margin: 15px 0; font-size: 1rem;">Are you sure you want to delete these transactions?</p>
+            <div class="btn-group" style="margin-top: 20px;">
+                <button id="confirmDeleteBtn" style="background: #dc2626; padding: 10px 20px;">Yes, Delete</button>
+                <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
+
     <!-- Add/Edit Item Modal -->
     <div id="itemModal" class="modal" style="display:none">
         <div class="modal-content">
@@ -1857,6 +1840,107 @@
 
     function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
 
+    // ============ DELETE SALES FUNCTIONS ============
+    let pendingDeleteAction = null;
+
+    function getLastWeekRange() {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 7);
+        return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+    }
+
+    function getLastMonthRange() {
+        const end = new Date();
+        const start = new Date();
+        start.setMonth(start.getMonth() - 1);
+        return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+    }
+
+    function showDeleteConfirm(message, action) {
+        pendingDeleteAction = action;
+        document.getElementById('deleteConfirmTitle').innerHTML = '⚠️ Confirm Delete';
+        document.getElementById('deleteConfirmMessage').innerHTML = message;
+        document.getElementById('deleteConfirmModal').style.display = 'flex';
+    }
+
+    async function executeDelete() {
+        if (!pendingDeleteAction) return;
+        
+        let transactionsToDelete = [];
+        
+        switch(pendingDeleteAction.type) {
+            case 'lastWeek':
+                const weekRange = getLastWeekRange();
+                transactionsToDelete = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end);
+                break;
+            case 'lastMonth':
+                const monthRange = getLastMonthRange();
+                transactionsToDelete = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end);
+                break;
+        }
+        
+        if (transactionsToDelete.length === 0) {
+            showMsg('No transactions found in this period!', true);
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            pendingDeleteAction = null;
+            return;
+        }
+        
+        for (let tx of transactionsToDelete) {
+            await supabaseClient.from('transactions').delete().eq('id', tx.id);
+        }
+        
+        await loadTransactionsFromSupabase();
+        await loadSalesHistory();
+        updateStats();
+        renderDailyTransactions();
+        renderAnalytics();
+        
+        document.getElementById('deleteConfirmModal').style.display = 'none';
+        pendingDeleteAction = null;
+        showMsg(`✅ ${transactionsToDelete.length} transaction(s) deleted successfully!`, false);
+    }
+
+    // Delete button event listeners
+    document.getElementById('deleteLastWeekBtn')?.addEventListener('click', () => {
+        const weekRange = getLastWeekRange();
+        const weekCount = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end).length;
+        
+        if (weekCount === 0) {
+            showMsg('No transactions found in last 7 days!', true);
+            return;
+        }
+        
+        showDeleteConfirm(
+            `Are you sure you want to delete ${weekCount} transaction(s) from the last 7 days (${weekRange.start} to ${weekRange.end})?`,
+            { type: 'lastWeek' }
+        );
+    });
+
+    document.getElementById('deleteLastMonthBtn')?.addEventListener('click', () => {
+        const monthRange = getLastMonthRange();
+        const monthCount = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end).length;
+        
+        if (monthCount === 0) {
+            showMsg('No transactions found in last 30 days!', true);
+            return;
+        }
+        
+        showDeleteConfirm(
+            `Are you sure you want to delete ${monthCount} transaction(s) from the last 30 days (${monthRange.start} to ${monthRange.end})?`,
+            { type: 'lastMonth' }
+        );
+    });
+
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', executeDelete);
+    document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => {
+        document.getElementById('deleteConfirmModal').style.display = 'none';
+        pendingDeleteAction = null;
+    });
+
+    // ============ END DELETE SALES FUNCTIONS ============
+
     // Event Listeners
     document.getElementById('hamburgerBtn')?.addEventListener('click', toggleSidebar);
     document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
@@ -2013,116 +2097,7 @@
             setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
         }, delay);
     }
-    // Delete Sales Functions
-let pendingDeleteAction = null;
-
-// Get date range for last week
-function getLastWeekRange() {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 7);
-    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
-}
-
-// Get date range for last month
-function getLastMonthRange() {
-    const end = new Date();
-    const start = new Date();
-    start.setMonth(start.getMonth() - 1);
-    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
-}
-
-// Show delete confirmation modal
-function showDeleteConfirm(message, action) {
-    pendingDeleteAction = action;
-    document.getElementById('deleteConfirmTitle').innerHTML = '⚠️ Confirm Delete';
-    document.getElementById('deleteConfirmMessage').innerHTML = message;
-    document.getElementById('deleteConfirmModal').style.display = 'flex';
-}
-
-// Execute delete based on action
-async function executeDelete() {
-    if (!pendingDeleteAction) return;
     
-    let transactionsToDelete = [];
-    let dateRange = '';
-    
-    switch(pendingDeleteAction.type) {
-        case 'lastWeek':
-            const weekRange = getLastWeekRange();
-            dateRange = `${weekRange.start} to ${weekRange.end}`;
-            transactionsToDelete = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end);
-            break;
-        case 'lastMonth':
-            const monthRange = getLastMonthRange();
-            dateRange = `${monthRange.start} to ${monthRange.end}`;
-            transactionsToDelete = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end);
-            break;
-    }
-    
-    if (transactionsToDelete.length === 0) {
-        showMsg('No transactions found in this period!', true);
-        document.getElementById('deleteConfirmModal').style.display = 'none';
-        pendingDeleteAction = null;
-        return;
-    }
-    
-    // Delete from Supabase
-    for (let tx of transactionsToDelete) {
-        const { error } = await supabaseClient.from('transactions').delete().eq('id', tx.id);
-        if (error) console.error('Delete error:', error);
-    }
-    
-    // Reload transactions
-    await loadTransactionsFromSupabase();
-    await loadSalesHistory();
-    updateStats();
-    renderDailyTransactions();
-    renderAnalytics();
-    
-    document.getElementById('deleteConfirmModal').style.display = 'none';
-    pendingDeleteAction = null;
-    showMsg(`✅ ${transactionsToDelete.length} transaction(s) deleted successfully!`, false);
-}
-
-// Delete Last Week Handler
-document.getElementById('deleteLastWeekBtn')?.addEventListener('click', () => {
-    const weekRange = getLastWeekRange();
-    const weekCount = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end).length;
-    
-    if (weekCount === 0) {
-        showMsg('No transactions found in last 7 days!', true);
-        return;
-    }
-    
-    showDeleteConfirm(
-        `Are you sure you want to delete ${weekCount} transaction(s) from the last 7 days (${weekRange.start} to ${weekRange.end})?`,
-        { type: 'lastWeek' }
-    );
-});
-
-// Delete Last Month Handler
-document.getElementById('deleteLastMonthBtn')?.addEventListener('click', () => {
-    const monthRange = getLastMonthRange();
-    const monthCount = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end).length;
-    
-    if (monthCount === 0) {
-        showMsg('No transactions found in last 30 days!', true);
-        return;
-    }
-    
-    showDeleteConfirm(
-        `Are you sure you want to delete ${monthCount} transaction(s) from the last 30 days (${monthRange.start} to ${monthRange.end})?`,
-        { type: 'lastMonth' }
-    );
-});
-
-// Confirm and Cancel buttons
-document.getElementById('confirmDeleteBtn')?.addEventListener('click', executeDelete);
-document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => {
-    document.getElementById('deleteConfirmModal').style.display = 'none';
-    pendingDeleteAction = null;
-});
     init();
 </script>
 </body>
