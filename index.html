@@ -667,7 +667,7 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal (Add this before the closing </body> tag) -->
+<!-- <!-- Delete Confirmation Modal (Add this before the closing </body> tag) -->
 <div id="deleteConfirmModal" class="modal" style="display:none">
     <div class="modal-content">
         <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
@@ -677,7 +677,7 @@
             <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
         </div>
     </div>
-</div>
+</div> -->
 
     <!-- MY BILLS PAGE -->
     <div id="mybillsPage" class="page">
@@ -2013,7 +2013,116 @@
             setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
         }, delay);
     }
+    // Delete Sales Functions
+let pendingDeleteAction = null;
+
+// Get date range for last week
+function getLastWeekRange() {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+
+// Get date range for last month
+function getLastMonthRange() {
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(start.getMonth() - 1);
+    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+
+// Show delete confirmation modal
+function showDeleteConfirm(message, action) {
+    pendingDeleteAction = action;
+    document.getElementById('deleteConfirmTitle').innerHTML = '⚠️ Confirm Delete';
+    document.getElementById('deleteConfirmMessage').innerHTML = message;
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
+}
+
+// Execute delete based on action
+async function executeDelete() {
+    if (!pendingDeleteAction) return;
     
+    let transactionsToDelete = [];
+    let dateRange = '';
+    
+    switch(pendingDeleteAction.type) {
+        case 'lastWeek':
+            const weekRange = getLastWeekRange();
+            dateRange = `${weekRange.start} to ${weekRange.end}`;
+            transactionsToDelete = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end);
+            break;
+        case 'lastMonth':
+            const monthRange = getLastMonthRange();
+            dateRange = `${monthRange.start} to ${monthRange.end}`;
+            transactionsToDelete = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end);
+            break;
+    }
+    
+    if (transactionsToDelete.length === 0) {
+        showMsg('No transactions found in this period!', true);
+        document.getElementById('deleteConfirmModal').style.display = 'none';
+        pendingDeleteAction = null;
+        return;
+    }
+    
+    // Delete from Supabase
+    for (let tx of transactionsToDelete) {
+        const { error } = await supabaseClient.from('transactions').delete().eq('id', tx.id);
+        if (error) console.error('Delete error:', error);
+    }
+    
+    // Reload transactions
+    await loadTransactionsFromSupabase();
+    await loadSalesHistory();
+    updateStats();
+    renderDailyTransactions();
+    renderAnalytics();
+    
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    pendingDeleteAction = null;
+    showMsg(`✅ ${transactionsToDelete.length} transaction(s) deleted successfully!`, false);
+}
+
+// Delete Last Week Handler
+document.getElementById('deleteLastWeekBtn')?.addEventListener('click', () => {
+    const weekRange = getLastWeekRange();
+    const weekCount = transactions.filter(t => t.date >= weekRange.start && t.date <= weekRange.end).length;
+    
+    if (weekCount === 0) {
+        showMsg('No transactions found in last 7 days!', true);
+        return;
+    }
+    
+    showDeleteConfirm(
+        `Are you sure you want to delete ${weekCount} transaction(s) from the last 7 days (${weekRange.start} to ${weekRange.end})?`,
+        { type: 'lastWeek' }
+    );
+});
+
+// Delete Last Month Handler
+document.getElementById('deleteLastMonthBtn')?.addEventListener('click', () => {
+    const monthRange = getLastMonthRange();
+    const monthCount = transactions.filter(t => t.date >= monthRange.start && t.date <= monthRange.end).length;
+    
+    if (monthCount === 0) {
+        showMsg('No transactions found in last 30 days!', true);
+        return;
+    }
+    
+    showDeleteConfirm(
+        `Are you sure you want to delete ${monthCount} transaction(s) from the last 30 days (${monthRange.start} to ${monthRange.end})?`,
+        { type: 'lastMonth' }
+    );
+});
+
+// Confirm and Cancel buttons
+document.getElementById('confirmDeleteBtn')?.addEventListener('click', executeDelete);
+document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    pendingDeleteAction = null;
+});
     init();
 </script>
 </body>
