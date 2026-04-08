@@ -636,27 +636,48 @@
         <div class="card"><h2>📋 Today's Transactions</h2><div id="dailyTransactionsList"></div></div>
     </div>
 
-    <!-- SALES HISTORY PAGE -->
-    <div id="historyPage" class="page">
-        <div class="stats-grid">
-            <div class="stat-card" id="totalAmountCard"><h4>💰 Total Amount</h4><div class="stat-number" id="allTimeTotal">₹0</div><div class="dropdown-icon">▼</div></div>
-            <div class="stat-card" id="totalItemsCard"><h4>📦 Total Items Sold</h4><div class="stat-number" id="totalItemsSoldCount">0</div><div class="dropdown-icon">▼</div></div>
-            <div class="stat-card"><h4>📆 Monthly Income</h4><div class="stat-number" id="monthlyIncomeTotal">₹0</div></div>
+<!-- SALES HISTORY PAGE -->
+<div id="historyPage" class="page">
+    <div class="stats-grid">
+        <div class="stat-card" id="totalAmountCard"><h4>💰 Total Amount</h4><div class="stat-number" id="allTimeTotal">₹0</div><div class="dropdown-icon">▼</div></div>
+        <div class="stat-card" id="totalItemsCard"><h4>📦 Total Items Sold</h4><div class="stat-number" id="totalItemsSoldCount">0</div><div class="dropdown-icon">▼</div></div>
+        <div class="stat-card"><h4>📆 Monthly Income</h4><div class="stat-number" id="monthlyIncomeTotal">₹0</div></div>
+    </div>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2>🔍 Filter Transactions</h2>
+            <button id="downloadPDFBtn" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 600;">📄 Download PDF</button>
         </div>
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <h2>🔍 Filter Transactions</h2>
-                <button id="downloadPDFBtn" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 600;">📄 Download PDF</button>
-            </div>
-            <div class="filter-bar">
-                <input type="text" id="filterSearch" class="filter-input" placeholder="Search by customer or item...">
-                <select id="filterPrice" class="filter-select"><option value="">Sort by Price</option><option value="asc">Price Low to High</option><option value="desc">Price High to Low</option></select>
-                <select id="filterQuantity" class="filter-select"><option value="">Sort by Quantity</option><option value="asc">Quantity Low to High</option><option value="desc">Quantity High to Low</option></select>
-            </div>
-            <h2>📜 Transaction History</h2>
-            <div id="transactionsList"></div>
+        <div class="filter-bar">
+            <input type="text" id="filterSearch" class="filter-input" placeholder="Search by customer or item...">
+            <select id="filterPrice" class="filter-select"><option value="">Sort by Price</option><option value="asc">Price Low to High</option><option value="desc">Price High to Low</option></select>
+            <select id="filterQuantity" class="filter-select"><option value="">Sort by Quantity</option><option value="asc">Quantity Low to High</option><option value="desc">Quantity High to Low</option></select>
+        </div>
+        <h2>📜 Transaction History</h2>
+        <div id="transactionsList"></div>
+    </div>
+    
+    <!-- DELETE SALES SECTION -->
+    <div class="card" style="background: linear-gradient(135deg, #fff5f5, #ffe0e0); margin-top: 20px;">
+        <h2 style="color: #dc2626;">🗑️ Delete Sales</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px;">
+            <button id="deleteLastWeekBtn" style="background: #ea580c; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Week Sales</button>
+            <button id="deleteLastMonthBtn" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: 600;">🗑️ Delete Last Month Sales</button>
         </div>
     </div>
+</div>
+
+<!-- Delete Confirmation Modal (Add this before the closing </body> tag) -->
+<div id="deleteConfirmModal" class="modal" style="display:none">
+    <div class="modal-content">
+        <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
+        <p id="deleteConfirmMessage" style="margin: 15px 0; font-size: 1rem;">Are you sure you want to delete these transactions?</p>
+        <div class="btn-group" style="margin-top: 20px;">
+            <button id="confirmDeleteBtn" style="background: #dc2626; padding: 10px 20px;">Yes, Delete</button>
+            <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
+        </div>
+    </div>
+</div>
 
     <!-- MY BILLS PAGE -->
     <div id="mybillsPage" class="page">
@@ -721,7 +742,17 @@
             </div>
         </div>
     </div>
-
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="modal" style="display:none">
+    <div class="modal-content">
+        <h3 id="deleteConfirmTitle" style="color: #dc2626;">⚠️ Confirm Delete</h3>
+        <p id="deleteConfirmMessage" style="margin: 15px 0; font-size: 1rem;">Are you sure you want to delete these transactions?</p>
+        <div class="btn-group" style="margin-top: 20px;">
+            <button id="confirmDeleteBtn" style="background: #dc2626; padding: 10px 20px;">Yes, Delete</button>
+            <button id="cancelDeleteBtn" class="btn-outline">Cancel</button>
+        </div>
+    </div>
+</div>
     <!-- Add/Edit Item Modal -->
     <div id="itemModal" class="modal" style="display:none">
         <div class="modal-content">
