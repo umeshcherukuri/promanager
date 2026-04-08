@@ -688,17 +688,30 @@
         <div class="card"><h2>⚠️ Low Stock Alert</h2><div id="importList"></div></div>
     </div>
 
-    <!-- MANAGE ITEMS PAGE -->
-    <div id="managePage" class="page">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h2>📦 Manage Items</h2>
-                <button id="addItemBtn" style="background: #764ba2; padding: 10px 20px; border: none; border-radius: 40px; color: white; cursor: pointer;">+ Add New Item</button>
-            </div>
-            <input type="text" id="manageSearch" placeholder="Search items..." style="width:100%; padding:12px; border-radius:40px; border:1px solid #e2e8f0; margin-bottom:20px;">
-            <div id="manageItemsList"></div>
+<!-- MANAGE ITEMS PAGE -->
+<div id="managePage" class="page">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h2>📦 Manage Items</h2>
+            <button id="addItemBtn" style="background: #764ba2; padding: 10px 20px; border: none; border-radius: 40px; color: white; cursor: pointer;">+ Add New Item</button>
         </div>
+        
+        <!-- Search and Filter Bar -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="manageSearch" placeholder="Search by name..." style="flex: 2; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
+            <select id="categoryFilter" style="flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
+                <option value="">All Categories</option>
+            </select>
+            <select id="priceFilter" style="flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
+                <option value="">Sort by Price</option>
+                <option value="asc">Price: Low to High</option>
+                <option value="desc">Price: High to Low</option>
+            </select>
+        </div>
+        
+        <div id="manageItemsList"></div>
     </div>
+</div>
 
     <!-- Floating Containers -->
     <div id="customerDetailsContainer" class="floating-container">
@@ -838,26 +851,26 @@
     }
 
     // Database Functions
-    async function loadInventoryFromSupabase() {
-        const { data, error } = await supabaseClient.from('inventory').select('*');
-        if (error) {
-            console.error('Error loading inventory:', error);
-            return false;
-        }
-        if (data && data.length > 0) {
-            inventory = data.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                stock: item.stock,
-                buying_price: item.buying_price || 0,
-                category: item.category || 'General',
-                imageData: item.image_data || ''
-            }));
-        }
-        return true;
+async function loadInventoryFromSupabase() {
+    const { data, error } = await supabaseClient.from('inventory').select('*');
+    if (error) {
+        console.error('Error loading inventory:', error);
+        return false;
     }
-
+    if (data && data.length > 0) {
+        inventory = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            stock: item.stock,
+            buying_price: item.buying_price || 0,
+            category: item.category || 'General',
+            imageData: item.image_data || ''
+        }));
+    }
+    populateCategoryFilter(); // Populate category dropdown after loading
+    return true;
+}
     async function saveInventoryToSupabase() {
         for (const item of inventory) {
             const dbItem = {
@@ -1661,33 +1674,74 @@
         printWindow.print();
     }
 
-    function renderManageItems() {
-        let search = document.getElementById('manageSearch')?.value.toLowerCase() || '';
-        let filtered = inventory.filter(i => i.name.toLowerCase().includes(search));
-        let container = document.getElementById('manageItemsList');
-        if (!filtered.length) { container.innerHTML = '<div class="empty-state">No items found</div>'; return; }
-        
-        container.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px;">
-                ${filtered.map(i => {
-                    let profit = i.price - (i.buying_price || 0);
-                    let stockColor = i.stock < 5 ? '#ef4444' : i.stock < 10 ? '#f59e0b' : '#10b981';
-                    return `
-                        <div style="background: white; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
-                            <img src="${i.imageData || 'https://placehold.co/100x100?text=No+Img'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
-                            <div style="font-weight: bold; font-size: 0.9rem;">${escapeHtml(i.name)}</div>
-                            <div style="color: #667eea;">₹${i.price}</div>
-                            <div style="color: ${stockColor};">📦 Stock: ${i.stock}</div>
-                            <div style="color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-size: 0.7rem;">💰 Profit: ₹${profit}/unit</div>
-                            <button class="editItemBtn" data-id="${i.id}" style="background: #facc15; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer;">✏️ Edit</button>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
-        document.querySelectorAll('.editItemBtn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
+function renderManageItems() {
+    let search = document.getElementById('manageSearch')?.value.toLowerCase() || '';
+    let category = document.getElementById('categoryFilter')?.value || '';
+    let priceSort = document.getElementById('priceFilter')?.value || '';
+    
+    let filtered = [...inventory];
+    
+    // Apply search filter
+    if (search) {
+        filtered = filtered.filter(i => i.name.toLowerCase().includes(search));
     }
+    
+    // Apply category filter
+    if (category) {
+        filtered = filtered.filter(i => i.category === category);
+    }
+    
+    // Apply price sort
+    if (priceSort === 'asc') {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (priceSort === 'desc') {
+        filtered.sort((a, b) => b.price - a.price);
+    }
+    
+    let container = document.getElementById('manageItemsList');
+    
+    if (!filtered.length) { 
+        container.innerHTML = '<div class="empty-state">No items found. Click + Add New Item to add products!</div>'; 
+        return; 
+    }
+    
+    // Horizontal grid layout for stock manager
+    container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 15px;">
+            ${filtered.map(i => {
+                let profit = i.price - (i.buying_price || 0);
+                let stockColor = i.stock < 5 ? '#ef4444' : i.stock < 10 ? '#f59e0b' : '#10b981';
+                return `
+                    <div style="background: white; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; transition: transform 0.2s;">
+                        <img src="${i.imageData || 'https://placehold.co/100x100?text=No+Img'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                        <div style="font-weight: bold; font-size: 0.9rem; margin: 5px 0;">${escapeHtml(i.name)}</div>
+                        <div style="color: #667eea; font-weight: bold;">₹${i.price}</div>
+                        <div style="color: ${stockColor}; font-size: 0.75rem;">📦 Stock: ${i.stock}</div>
+                        <div style="color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-size: 0.7rem;">💰 Profit: ₹${profit}/unit</div>
+                        <div style="color: #888; font-size: 0.65rem; margin: 3px 0;">${i.category || 'Uncategorized'}</div>
+                        <button class="editItemBtn" data-id="${i.id}" style="background: #facc15; color: #1e3c2c; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer; width: 100%; font-size: 0.75rem;">✏️ Edit</button>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    
+    document.querySelectorAll('.editItemBtn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
+}
 
+// Function to populate category dropdown
+function populateCategoryFilter() {
+    const categories = [...new Set(inventory.map(item => item.category).filter(c => c))];
+    const categorySelect = document.getElementById('categoryFilter');
+    if (categorySelect) {
+        const currentValue = categorySelect.value;
+        categorySelect.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(cat => {
+            categorySelect.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+        });
+        categorySelect.value = currentValue;
+    }
+}
     function renderAnalytics() {
         let salesMap = new Map();
         for (let tx of transactions) {
@@ -1781,32 +1835,35 @@
         }
     }
 
-    async function saveItem() {
-        let name = document.getElementById('itemName').value.trim();
-        let category = document.getElementById('itemCategory').value;
-        let price = parseFloat(document.getElementById('itemPrice').value);
-        let buyingPrice = parseFloat(document.getElementById('itemBuyingPrice').value);
-        let stock = parseInt(document.getElementById('itemStock').value);
-        let imageData = document.getElementById('imagePreview').src;
-        
-        if (!name || isNaN(price) || isNaN(stock) || isNaN(buyingPrice)) { showMsg('Please fill all fields!', true); return; }
-        if (imageData && (imageData.includes('blob:') || imageData.startsWith('data:'))) { }
-        else if (!imageData || imageData.includes('placehold')) { imageData = ''; }
-        
-        if (editId) {
-            let idx = inventory.findIndex(i => i.id === editId);
-            if (idx !== -1) inventory[idx] = { ...inventory[idx], name, category, price, buying_price: buyingPrice, stock, imageData: imageData || inventory[idx].imageData };
-        } else {
-            inventory.push({ id: Date.now().toString(), name, category, price, buying_price: buyingPrice, stock, imageData: imageData || '' });
-        }
-        
-        await saveInventoryToSupabase();
-        closeModal();
-        renderProductsGrid();
-        renderManageItems();
-        showMsg(`✅ ${name} saved!`, false);
+async function saveItem() {
+    let name = document.getElementById('itemName').value.trim();
+    let category = document.getElementById('itemCategory').value;
+    let price = parseFloat(document.getElementById('itemPrice').value);
+    let buyingPrice = parseFloat(document.getElementById('itemBuyingPrice').value);
+    let stock = parseInt(document.getElementById('itemStock').value);
+    let imageData = document.getElementById('imagePreview').src;
+    
+    if (!name || isNaN(price) || isNaN(stock) || isNaN(buyingPrice)) { 
+        showMsg('Please fill all fields!', true); 
+        return; 
     }
-
+    if (imageData && (imageData.includes('blob:') || imageData.startsWith('data:'))) { }
+    else if (!imageData || imageData.includes('placehold')) { imageData = ''; }
+    
+    if (editId) {
+        let idx = inventory.findIndex(i => i.id === editId);
+        if (idx !== -1) inventory[idx] = { ...inventory[idx], name, category, price, buying_price: buyingPrice, stock, imageData: imageData || inventory[idx].imageData };
+    } else {
+        inventory.push({ id: Date.now().toString(), name, category, price, buying_price: buyingPrice, stock, imageData: imageData || '' });
+    }
+    
+    await saveInventoryToSupabase();
+    closeModal();
+    renderProductsGrid();
+    renderManageItems();
+    populateCategoryFilter(); // Update category dropdown
+    showMsg(`✅ ${name} saved!`, false);
+}
     function closeModal() {
         document.getElementById('itemModal').style.display = 'none';
         editId = null;
@@ -1974,7 +2031,10 @@
     });
     
     document.getElementById('downloadPDFBtn')?.addEventListener('click', downloadSalesHistoryPDF);
-    
+    // Filter event listeners for stock manager
+document.getElementById('manageSearch')?.addEventListener('input', () => renderManageItems());
+document.getElementById('categoryFilter')?.addEventListener('change', () => renderManageItems());
+document.getElementById('priceFilter')?.addEventListener('change', () => renderManageItems());
     document.querySelectorAll('.sidebar-item').forEach(item => item.addEventListener('click', () => navigateToPage(item.dataset.page)));
     document.getElementById('completeSaleBtn')?.addEventListener('click', completeSale);
     document.getElementById('addItemBtn')?.addEventListener('click', () => openItemModal(null));
