@@ -285,6 +285,10 @@
             font-size: 0.75rem;
             margin: 6px 0 3px;
         }
+        /* Faster skeleton animation */
+.skeleton-card, .skeleton-image, .skeleton-text {
+    animation-duration: 1s;
+}
         .product-price {
             color: #667eea;
             font-weight: bold;
@@ -608,7 +612,14 @@
         <div class="card">
             <h2>🔍 Search Products</h2>
             <input type="text" id="searchProduct" placeholder="Search..." style="width:100%; padding:12px; border-radius:40px; border:1px solid #e2e8f0;">
-            <div id="productsGrid" class="products-grid"></div>
+          <div id="productsGrid" class="products-grid">
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+</div>
         </div>
         <div class="card">
             <h2>🛒 Current Cart</h2>
@@ -2018,60 +2029,31 @@
         capturedImageData = null;
     });
     
-    async function init() {
-        const startTime = Date.now();
+  async function init() {
+    const startTime = Date.now();
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const productsContainer = document.getElementById('productsGrid');
+    
+    // Show loading skeletons
+    productsContainer.innerHTML = `
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+        <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-text"></div></div>
+    `;
+    
+    try {
+        // Load data in parallel for faster loading
+        const [inventoryResult, transactionsResult, billsResult] = await Promise.all([
+            supabaseClient.from('inventory').select('*'),
+            supabaseClient.from('transactions').select('*').order('created_at', { ascending: false }),
+            supabaseClient.from('bills').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] }))
+        ]);
         
-        try {
-            const [inventoryResult, transactionsResult, billsResult] = await Promise.all([
-                supabaseClient.from('inventory').select('*'),
-                supabaseClient.from('transactions').select('*').order('created_at', { ascending: false }),
-                supabaseClient.from('bills').select('*').order('created_at', { ascending: false })
-            ]);
-            
-            if (inventoryResult.error) {
-                console.error('Error loading inventory:', inventoryResult.error);
-                inventory = [
-                    { id: "1", name: "Parle-G", price: 10, buying_price: 8, stock: 100, category: "Snacks", imageData: "" },
-                    { id: "2", name: "Maggi", price: 14, buying_price: 11, stock: 80, category: "Snacks", imageData: "" },
-                    { id: "3", name: "Tea", price: 85, buying_price: 70, stock: 50, category: "Beverages", imageData: "" },
-                    { id: "4", name: "Sugar", price: 42, buying_price: 38, stock: 60, category: "Grocery", imageData: "" },
-                    { id: "5", name: "Milk", price: 60, buying_price: 50, stock: 40, category: "Dairy", imageData: "" },
-                    { id: "6", name: "Bread", price: 35, buying_price: 28, stock: 45, category: "Bakery", imageData: "" },
-                    { id: "7", name: "Soap", price: 45, buying_price: 38, stock: 70, category: "Hygiene", imageData: "" },
-                    { id: "8", name: "Oil", price: 115, buying_price: 100, stock: 30, category: "Grocery", imageData: "" }
-                ];
-            } else {
-                inventory = inventoryResult.data.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    stock: item.stock,
-                    buying_price: item.buying_price || 0,
-                    category: item.category || 'General',
-                    imageData: item.image_data || ''
-                }));
-            }
-            
-            if (!transactionsResult.error) {
-                transactions = transactionsResult.data || [];
-                allTransactions = [...transactions];
-            }
-            
-            if (!billsResult.error && billsResult.data) {
-                bills = billsResult.data;
-            }
-            
-            renderProductsGrid();
-            renderCart();
-            renderDailyTransactions();
-            renderManageItems();
-            renderAnalytics();
-            renderBillsList();
-            updateStats();
-            document.getElementById('selectedDateDisplay').innerHTML = getToday();
-            
-        } catch (error) {
-            console.error('Init error:', error);
+        // Process inventory
+        if (inventoryResult.error || !inventoryResult.data.length) {
             inventory = [
                 { id: "1", name: "Parle-G", price: 10, buying_price: 8, stock: 100, category: "Snacks", imageData: "" },
                 { id: "2", name: "Maggi", price: 14, buying_price: 11, stock: 80, category: "Snacks", imageData: "" },
@@ -2082,21 +2064,63 @@
                 { id: "7", name: "Soap", price: 45, buying_price: 38, stock: 70, category: "Hygiene", imageData: "" },
                 { id: "8", name: "Oil", price: 115, buying_price: 100, stock: 30, category: "Grocery", imageData: "" }
             ];
-            renderProductsGrid();
-            renderCart();
-            updateStats();
+        } else {
+            inventory = inventoryResult.data.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                stock: item.stock,
+                buying_price: item.buying_price || 0,
+                category: item.category || 'General',
+                imageData: item.image_data || ''
+            }));
         }
         
-        const elapsed = Date.now() - startTime;
-        const minLoadTime = 1500;
-        const delay = Math.max(0, minLoadTime - elapsed);
+        // Process transactions
+        transactions = transactionsResult.data || [];
+        allTransactions = [...transactions];
         
-        setTimeout(() => {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('hide');
-            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
-        }, delay);
+        // Process bills
+        bills = billsResult.data || [];
+        
+        // Render everything at once
+        renderProductsGrid();
+        renderCart();
+        renderDailyTransactions();
+        renderManageItems();
+        renderAnalytics();
+        renderBillsList();
+        updateStats();
+        document.getElementById('selectedDateDisplay').innerHTML = getToday();
+        
+    } catch (error) {
+        console.error('Init error:', error);
+        // Set default inventory on error
+        inventory = [
+            { id: "1", name: "Parle-G", price: 10, buying_price: 8, stock: 100, category: "Snacks", imageData: "" },
+            { id: "2", name: "Maggi", price: 14, buying_price: 11, stock: 80, category: "Snacks", imageData: "" },
+            { id: "3", name: "Tea", price: 85, buying_price: 70, stock: 50, category: "Beverages", imageData: "" },
+            { id: "4", name: "Sugar", price: 42, buying_price: 38, stock: 60, category: "Grocery", imageData: "" },
+            { id: "5", name: "Milk", price: 60, buying_price: 50, stock: 40, category: "Dairy", imageData: "" },
+            { id: "6", name: "Bread", price: 35, buying_price: 28, stock: 45, category: "Bakery", imageData: "" },
+            { id: "7", name: "Soap", price: 45, buying_price: 38, stock: 70, category: "Hygiene", imageData: "" },
+            { id: "8", name: "Oil", price: 115, buying_price: 100, stock: 30, category: "Grocery", imageData: "" }
+        ];
+        renderProductsGrid();
+        renderCart();
+        updateStats();
     }
+    
+    // Hide loading overlay faster
+    const elapsed = Date.now() - startTime;
+    const minLoadTime = 800; // Reduced from 1500ms to 800ms
+    const delay = Math.max(0, minLoadTime - elapsed);
+    
+    setTimeout(() => {
+        loadingOverlay.classList.add('hide');
+        setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+    }, delay);
+}
     
     init();
 </script>
