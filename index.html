@@ -21,7 +21,33 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-        
+        /* Stock Manager Grid - Horizontal layout */
+#manageItemsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+}
+
+/* For smaller screens - ensure at least 3 items per row */
+@media (max-width: 768px) {
+    #manageItemsList {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+}
+
+@media (max-width: 550px) {
+    #manageItemsList {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+    }
+}
+
+/* Product card hover effect */
+.product-card:hover, #manageItemsList > div:hover {
+    transform: translateY(-3px);
+    transition: transform 0.2s;
+}
         /* 3D Loading Animation */
         .loading-overlay {
             position: fixed;
@@ -1705,30 +1731,29 @@ function renderManageItems() {
         return; 
     }
     
-    // Horizontal grid layout for stock manager
-    container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 15px;">
-            ${filtered.map(i => {
-                let profit = i.price - (i.buying_price || 0);
-                let stockColor = i.stock < 5 ? '#ef4444' : i.stock < 10 ? '#f59e0b' : '#10b981';
-                return `
-                    <div style="background: white; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; transition: transform 0.2s;">
-                        <img src="${i.imageData || 'https://placehold.co/100x100?text=No+Img'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin: 5px 0;">${escapeHtml(i.name)}</div>
-                        <div style="color: #667eea; font-weight: bold;">₹${i.price}</div>
-                        <div style="color: ${stockColor}; font-size: 0.75rem;">📦 Stock: ${i.stock}</div>
-                        <div style="color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-size: 0.7rem;">💰 Profit: ₹${profit}/unit</div>
-                        <div style="color: #888; font-size: 0.65rem; margin: 3px 0;">${i.category || 'Uncategorized'}</div>
-                        <button class="editItemBtn" data-id="${i.id}" style="background: #facc15; color: #1e3c2c; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer; width: 100%; font-size: 0.75rem;">✏️ Edit</button>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
+    // Horizontal grid layout for stock manager - ensure it's a grid container
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))';
+    container.style.gap = '15px';
+    
+    container.innerHTML = filtered.map(i => {
+        let profit = i.price - (i.buying_price || 0);
+        let stockColor = i.stock < 5 ? '#ef4444' : i.stock < 10 ? '#f59e0b' : '#10b981';
+        return `
+            <div style="background: white; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; transition: transform 0.2s;">
+                <img src="${i.imageData || 'https://placehold.co/100x100?text=No+Img'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                <div style="font-weight: bold; font-size: 0.9rem; margin: 5px 0;">${escapeHtml(i.name)}</div>
+                <div style="color: #667eea; font-weight: bold;">₹${i.price}</div>
+                <div style="color: ${stockColor}; font-size: 0.75rem;">📦 Stock: ${i.stock}</div>
+                <div style="color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-size: 0.7rem;">💰 Profit: ₹${profit}/unit</div>
+                <div style="color: #888; font-size: 0.65rem; margin: 3px 0;">${i.category || 'Uncategorized'}</div>
+                <button class="editItemBtn" data-id="${i.id}" style="background: #facc15; color: #1e3c2c; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer; width: 100%; font-size: 0.75rem;">✏️ Edit</button>
+            </div>
+        `;
+    }).join('');
     
     document.querySelectorAll('.editItemBtn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
 }
-
 // Function to populate category dropdown
 function populateCategoryFilter() {
     const categories = [...new Set(inventory.map(item => item.category).filter(c => c))];
@@ -1742,70 +1767,71 @@ function populateCategoryFilter() {
         categorySelect.value = currentValue;
     }
 }
-    function renderAnalytics() {
-        let salesMap = new Map();
-        for (let tx of transactions) {
-            let items = getItemsArray(tx.items);
-            for (let i of items) {
-                salesMap.set(i.name, (salesMap.get(i.name) || 0) + (i.quantity || 0));
-            }
+  function renderAnalytics() {
+    let salesMap = new Map();
+    for (let tx of transactions) {
+        let items = getItemsArray(tx.items);
+        for (let i of items) {
+            salesMap.set(i.name, (salesMap.get(i.name) || 0) + (i.quantity || 0));
         }
-        let sorted = Array.from(salesMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
-        let topContainer = document.getElementById('topItemsList');
-        
-        if (!sorted.length) {
-            topContainer.innerHTML = '<div class="empty-state">No sales yet</div>';
-        } else {
-            topContainer.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px;">
-                    ${sorted.map(([name, qty], idx) => {
-                        let item = inventory.find(i => i.name === name);
-                        let profit = item ? (item.price - (item.buying_price || 0)) : 0;
-                        return `
-                            <div style="background: linear-gradient(135deg, #f5f0ff, #e8e0ff); border-radius: 16px; padding: 12px; text-align: center;">
-                                <div style="font-size: 2rem;">🏆</div>
-                                <div style="font-weight: bold;">${escapeHtml(name)}</div>
-                                <div style="color: #667eea;">Sold: ${qty} units</div>
-                                <div style="color: #10b981;">Profit: ₹${profit}/unit</div>
-                                <div style="background: #667eea; color: white; border-radius: 20px; padding: 4px 8px; margin-top: 8px; display: inline-block; font-size: 0.7rem;">#${idx + 1}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-        
-        let lowStock = inventory.filter(i => i.stock < 10);
-        let importDiv = document.getElementById('importList');
-        if (!lowStock.length) {
-            importDiv.innerHTML = '<div class="empty-state">✅ All stock sufficient</div>';
-            return;
-        }
-        
-        importDiv.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px;">
-                ${lowStock.map(i => {
-                    let profit = i.price - (i.buying_price || 0);
-                    let stockColor = i.stock < 5 ? '#ef4444' : '#f59e0b';
-                    return `
-                        <div style="background: linear-gradient(135deg, #fff5f5, #ffe0e0); border-radius: 16px; padding: 12px; text-align: center; border: 1px solid ${stockColor};">
-                            <img src="${i.imageData || 'https://placehold.co/100x100?text=Product'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
-                            <div style="font-weight: bold;">${escapeHtml(i.name)}</div>
-                            <div style="color: ${stockColor};">⚠️ Stock: ${i.stock}</div>
-                            <div style="color: #667eea;">₹${i.price}</div>
-                            <button class="importBtn" data-id="${i.id}" style="background: #f4a261; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer;">➕ Import +10</button>
-                        </div>
-                    `;
-                }).join('')}
+    }
+    let sorted = Array.from(salesMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    let topContainer = document.getElementById('topItemsList');
+    
+    if (!sorted.length) {
+        topContainer.innerHTML = '<div class="empty-state">No sales yet</div>';
+        return;
+    }
+    
+    // Set grid layout
+    topContainer.style.display = 'grid';
+    topContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))';
+    topContainer.style.gap = '15px';
+    
+    topContainer.innerHTML = sorted.map(([name, qty], idx) => {
+        let item = inventory.find(i => i.name === name);
+        let profit = item ? (item.price - (item.buying_price || 0)) : 0;
+        return `
+            <div style="background: linear-gradient(135deg, #f5f0ff, #e8e0ff); border-radius: 16px; padding: 12px; text-align: center;">
+                <div style="font-size: 2rem;">🏆</div>
+                <div style="font-weight: bold;">${escapeHtml(name)}</div>
+                <div style="color: #667eea;">Sold: ${qty} units</div>
+                <div style="color: #10b981;">Profit: ₹${profit}/unit</div>
+                <div style="background: #667eea; color: white; border-radius: 20px; padding: 4px 8px; margin-top: 8px; display: inline-block; font-size: 0.7rem;">#${idx + 1}</div>
             </div>
         `;
-        
-        document.querySelectorAll('.importBtn').forEach(btn => btn.addEventListener('click', async () => {
-            let prod = inventory.find(i => i.id === btn.dataset.id);
-            if (prod) { prod.stock += 10; await updateInventoryStockInSupabase(prod.id, prod.stock); renderAnalytics(); renderProductsGrid(); renderManageItems(); showMsg(`${prod.name} stock updated!`, false); }
-        }));
+    }).join('');
+    
+    let lowStock = inventory.filter(i => i.stock < 10);
+    let importDiv = document.getElementById('importList');
+    if (!lowStock.length) {
+        importDiv.innerHTML = '<div class="empty-state">✅ All stock sufficient</div>';
+        return;
     }
-
+    
+    importDiv.style.display = 'grid';
+    importDiv.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))';
+    importDiv.style.gap = '15px';
+    
+    importDiv.innerHTML = lowStock.map(i => {
+        let profit = i.price - (i.buying_price || 0);
+        let stockColor = i.stock < 5 ? '#ef4444' : '#f59e0b';
+        return `
+            <div style="background: linear-gradient(135deg, #fff5f5, #ffe0e0); border-radius: 16px; padding: 12px; text-align: center; border: 1px solid ${stockColor};">
+                <img src="${i.imageData || 'https://placehold.co/100x100?text=Product'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                <div style="font-weight: bold;">${escapeHtml(i.name)}</div>
+                <div style="color: ${stockColor};">⚠️ Stock: ${i.stock}</div>
+                <div style="color: #667eea;">₹${i.price}</div>
+                <button class="importBtn" data-id="${i.id}" style="background: #f4a261; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 8px; cursor: pointer;">➕ Import +10</button>
+            </div>
+        `;
+    }).join('');
+    
+    document.querySelectorAll('.importBtn').forEach(btn => btn.addEventListener('click', async () => {
+        let prod = inventory.find(i => i.id === btn.dataset.id);
+        if (prod) { prod.stock += 10; await updateInventoryStockInSupabase(prod.id, prod.stock); renderAnalytics(); renderProductsGrid(); renderManageItems(); showMsg(`${prod.name} stock updated!`, false); }
+    }));
+}
     function openItemModal(id = null) {
         editId = id;
         let modal = document.getElementById('itemModal');
