@@ -761,6 +761,39 @@
             }
         }
 
+        @media (max-width: 600px) {
+            .stats-grid, .daily-stats-grid {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                gap: 5px !important;
+                overflow-x: auto;
+                padding-bottom: 5px;
+            }
+            .stat-card, .daily-stat-item {
+                flex: 1;
+                min-width: unset;
+                padding: 10px 5px !important;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                transition: transform 0.2s ease-in-out;
+            }
+            .stat-card h4, .daily-stat-item div:first-child {
+                font-size: 0.65rem !important;
+                margin-bottom: 5px;
+                white-space: nowrap;
+            }
+            .stat-number, .daily-stat-value {
+                font-size: 1rem !important;
+            }
+            .dropdown-icon {
+                font-size: 0.6rem;
+                margin-top: 2px;
+            }
+        }
+
         @media (max-width: 550px) {
             .products-grid {
                 grid-template-columns: repeat(3, 1fr);
@@ -910,7 +943,7 @@
                     <div class="dropdown-icon">▼</div>
                 </div>
                 <div class="stat-card" id="dailyProfitStatCard">
-                    <h4>💵 Today's Profit</h4>
+                    <h4 id="dailyProfitLabel">💵 Today's Profit</h4>
                     <div class="stat-number" id="dailyProfitStat">₹0</div>
                     <div class="dropdown-icon">▼</div>
                 </div>
@@ -950,6 +983,13 @@
                     <div class="stat-number" id="monthlyIncomeTotal">₹0</div>
                 </div>
             </div>
+
+            <div id="historyDailyAggregateContainer" class="card"
+                style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 20px; border-radius: 24px;">
+                <h3 style="margin-bottom: 15px; color: #334155;">📊 Daily Performance Breakdown</h3>
+                <div id="historyDailyAggregateTable"></div>
+            </div>
+
             <div class="card">
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
@@ -1043,6 +1083,10 @@
                     <select id="categoryFilter"
                         style="flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
                         <option value="">All Categories</option>
+                    </select>
+                    <select id="vendorFilter"
+                        style="flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
+                        <option value="">All Vendors</option>
                     </select>
                     <select id="priceFilter"
                         style="flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0;">
@@ -1161,6 +1205,7 @@
                 </div>
                 <h3 id="modalTitle">Add Item</h3>
                 <div class="form-group"><input type="text" id="itemName" placeholder="Product Name"></div>
+                <div class="form-group"><input type="text" id="itemVendor" placeholder="Vendor Name"></div>
                 <div class="form-group"><input type="text" id="itemCategory" placeholder="Category"></div>
                 <div class="form-group"><input type="number" id="itemPrice" placeholder="Selling Price (₹)"></div>
                 <div class="form-group"><input type="number" id="itemBuyingPrice" placeholder="Buying Price (₹)"></div>
@@ -1168,9 +1213,12 @@
                 <div class="form-group">
                     <input type="file" id="itemImage" accept="image/*" style="display:none">
                     <button type="button" id="galleryBtn"
-                        style="background:#667eea; color:white; padding:10px; border:none; border-radius:40px;">📁
+                        style="background:#667eea; color:white; padding:10px; border:none; border-radius:40px; margin-right: 5px;">📁
                         Upload Image</button>
-                    <img id="imagePreview" class="image-preview" style="display:none;">
+                    <button type="button" id="openItemCameraBtn"
+                        style="background:#10b981; color:white; padding:10px; border:none; border-radius:40px;">📷
+                        Open Camera</button>
+                    <img id="imagePreview" class="image-preview" style="display:none; margin-top: 10px;">
                 </div>
                 <div class="btn-group"><button id="saveItemBtn">Save</button><button id="cancelModalBtn"
                         class="btn-outline">Cancel</button></div>
@@ -1190,6 +1238,7 @@
         let editId = null;
         let capturedImageData = null;
         let currentStream = null;
+        let cameraTarget = 'bill';
         let allTransactions = [];
         let searchTimeout;
 
@@ -1364,6 +1413,7 @@
                 price: item.price,
                 stock: item.stock,
                 category: item.category || 'General',
+                vendor: item.vendor || '',
                 buying_price: item.buying_price || 0,
                 image_data: item.imageData || ''
             };
@@ -1443,20 +1493,48 @@
                 return;
             }
 
-            container.innerHTML = bills.map((bill, idx) => `
-            <div class="transaction-item" style="margin-bottom: 15px;">
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                    <img src="${bill.image_data}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px; cursor: pointer;" onclick="viewBillImage('${bill.image_data}')">
-                    <div style="flex: 1;">
-                        <div><strong>Bill #${idx + 1}</strong></div>
-                        <div>📅 ${bill.date}</div>
-                        <div>👤 ${escapeHtml(bill.customer_name || 'Customer')}</div>
-                        <div>💰 Amount: ₹${bill.amount || 0}</div>
-                    </div>
-                    <button class="deleteBillBtn" data-id="${bill.id}" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer;">🗑️ Delete</button>
-                </div>
+            container.innerHTML = '';
+            
+            // Group bills by customer name
+            const billsByCustomer = {};
+            bills.forEach(bill => {
+                const name = (bill.customer_name || 'Customer').toLowerCase().trim();
+                if (!billsByCustomer[name]) billsByCustomer[name] = [];
+                billsByCustomer[name].push(bill);
+            });
+
+            const renderBillItemHtml = (bill, idx) => `
+            <div style="flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; align-items: center; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; background: white; min-width: 120px;">
+                <img src="${bill.image_data}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="viewBillImage('${bill.image_data}')">
+                <div style="font-size: 0.7rem; color: #64748b;">📅 ${bill.date}</div>
+                <div style="font-weight: bold; color: #334155; font-size: 0.8rem;">💰 ₹${bill.amount || 0}</div>
+                <button class="deleteBillBtn" data-id="${bill.id}" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 20px; cursor: pointer; font-size: 0.7rem;">🗑️ Delete</button>
             </div>
-        `).join('');
+            `;
+
+            let htmlStr = '';
+            
+            Object.keys(billsByCustomer).forEach((nameKey) => {
+                const customerBills = billsByCustomer[nameKey];
+                const custName = customerBills[0].customer_name || 'Customer';
+                
+                htmlStr += `<div class="transaction-item" style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong style="font-size: 1.1rem;">👤 ${escapeHtml(custName)}</strong>
+                        <span style="background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">${customerBills.length} Bill${customerBills.length > 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px;">
+                `;
+                
+                for(let i = 0; i < customerBills.length; i++) {
+                    htmlStr += renderBillItemHtml(customerBills[i], i);
+                }
+                
+                htmlStr += `</div></div>`;
+            });
+            
+            container.innerHTML = htmlStr;
 
             document.querySelectorAll('.deleteBillBtn').forEach(btn => {
                 btn.addEventListener('click', async () => {
@@ -1468,7 +1546,6 @@
                 });
             });
         }
-
         window.viewBillImage = function (imageData) {
             const modal = document.createElement('div');
             modal.style.position = 'fixed';
@@ -1518,18 +1595,87 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+            let capturedDataTemp = canvas.toDataURL('image/jpeg', 0.8);
             stopCamera();
             document.getElementById('cameraModal').style.display = 'none';
-            showBillDetailsForm();
+
+            if (cameraTarget === 'bill') {
+                capturedImageData = capturedDataTemp;
+                showBillDetailsForm();
+            } else if (cameraTarget === 'item') {
+                document.getElementById('imagePreview').src = capturedDataTemp;
+                document.getElementById('imagePreview').style.display = 'block';
+            }
         }
 
         function showBillDetailsForm() {
             document.getElementById('billDetailsContent').innerHTML = `
             <img src="${capturedImageData}" style="width: 100%; border-radius: 12px; margin-bottom: 15px;">
-            <div class="form-group"><label>Customer Name:</label><input type="text" id="billCustomerName" placeholder="Enter customer name" style="width:100%; padding: 10px; border-radius: 40px; border: 1px solid #ccc;"></div>
+            <div class="form-group">
+                <label>Customer Name:</label>
+                <input type="text" id="billCustomerName" placeholder="Enter customer name" style="width:100%; padding: 10px; border-radius: 40px; border: 1px solid #ccc;">
+            </div>
+            
+            <!-- Returning Customer Badge and Dropdown -->
+            <div id="returningCustomerSection" style="display:none; margin-bottom: 15px;">
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; display: inline-block; margin-bottom: 8px;">🌟 Returning Customer</span>
+                <button type="button" id="togglePrevBillsBtn" style="width: 100%; background: #f1f5f9; color: #334155; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">📂 Show Previous Bills (0)</button>
+                <div id="prevBillsDropdown" style="display: none; max-height: 200px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; padding: 10px;">
+                    <!-- Previois bills injected here -->
+                </div>
+            </div>
+
             <div class="form-group"><label>Bill Amount (₹):</label><input type="number" id="billAmount" placeholder="Enter total amount" style="width:100%; padding: 10px; border-radius: 40px; border: 1px solid #ccc;"></div>
         `;
+            
+            const nameInput = document.getElementById('billCustomerName');
+            nameInput.addEventListener('input', function() {
+                const typedName = this.value.toLowerCase().trim();
+                const pastBills = bills.filter(b => b.customer_name && b.customer_name.toLowerCase().trim() === typedName);
+                
+                const returnSection = document.getElementById('returningCustomerSection');
+                const toggleBtn = document.getElementById('togglePrevBillsBtn');
+                const prevDropdown = document.getElementById('prevBillsDropdown');
+                
+                if (typedName && pastBills.length > 0) {
+                    returnSection.style.display = 'block';
+                    toggleBtn.textContent = `📂 Show Previous Bills (${pastBills.length})`;
+                    
+                    // Render past bills
+                    let html = '';
+                    pastBills.forEach(pb => {
+                        html += `
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px;">
+                                <div style="display:flex; align-items: center; gap: 10px;">
+                                    ${pb.image_data ? `<img src="${pb.image_data}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">` : '<div style="width:40px; height:40px; background:#e2e8f0; border-radius:8px;"></div>'}
+                                    <div style="font-size: 0.8rem;">
+                                        <div style="font-weight: bold; color: #334155;">${pb.date || 'Unknown Date'}</div>
+                                    </div>
+                                </div>
+                                <div style="font-weight: bold; color: #10b981;">₹${pb.amount || 0}</div>
+                            </div>
+                        `;
+                    });
+                    prevDropdown.innerHTML = html;
+                } else {
+                    returnSection.style.display = 'none';
+                    prevDropdown.style.display = 'none';
+                }
+            });
+
+            document.getElementById('billDetailsContent').addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'togglePrevBillsBtn') {
+                    const prevDropdown = document.getElementById('prevBillsDropdown');
+                    if (prevDropdown.style.display === 'none') {
+                        prevDropdown.style.display = 'block';
+                        e.target.textContent = e.target.textContent.replace('Show', 'Hide');
+                    } else {
+                        prevDropdown.style.display = 'none';
+                        e.target.textContent = e.target.textContent.replace('Hide', 'Show');
+                    }
+                }
+            });
+
             document.getElementById('billDetailsModal').style.display = 'flex';
         }
 
@@ -1665,9 +1811,10 @@
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">New Price (₹)</label>
                 <input type="number" id="newPriceInput" step="0.5" value="${currentPrice}" style="width: 100%; padding: 12px; border-radius: 40px; border: 1px solid #ddd; font-size: 16px; text-align: center;">
             </div>
-            <div style="display: flex; gap: 12px;">
-                <button id="confirmPriceBtn" style="flex: 1; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 12px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 1rem;">Update</button>
-                <button id="cancelPriceBtn" style="flex: 1; background: #f3f4f6; color: #666; border: none; padding: 12px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 1rem;">Cancel</button>
+            <div style="display: flex; gap: 8px; flex-direction: column;">
+                <button id="confirmPriceBtn" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 12px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 1rem;">Update (Update Default)</button>
+                <button id="tempPriceBtn" style="width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 1rem;">Change (This Sale Only)</button>
+                <button id="cancelPriceBtn" style="width: 100%; background: #f3f4f6; color: #666; border: none; padding: 12px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 1rem;">Cancel</button>
             </div>
         `;
 
@@ -1681,18 +1828,24 @@
             modal.querySelector('#confirmPriceBtn').onclick = () => {
                 const newPrice = parseFloat(input.value);
                 overlay.remove();
-                callback(newPrice);
+                callback(newPrice, true);
+            };
+
+            modal.querySelector('#tempPriceBtn').onclick = () => {
+                const newPrice = parseFloat(input.value);
+                overlay.remove();
+                callback(newPrice, false);
             };
 
             modal.querySelector('#cancelPriceBtn').onclick = () => {
                 overlay.remove();
-                callback(null);
+                callback(null, false);
             };
 
             overlay.onclick = (e) => {
                 if (e.target === overlay) {
                     overlay.remove();
-                    callback(null);
+                    callback(null, false);
                 }
             };
 
@@ -1700,7 +1853,7 @@
                 if (e.key === 'Enter') {
                     const newPrice = parseFloat(input.value);
                     overlay.remove();
-                    callback(newPrice);
+                    callback(newPrice, true); // default to permanent update on Enter
                 }
             };
         }
@@ -1805,19 +1958,23 @@
                     priceSpan.style.opacity = '0.5';
                     priceSpan.style.cursor = 'wait';
 
-                    showPriceUpdateModal(itemName, oldPrice, async (newPrice) => {
+                    showPriceUpdateModal(itemName, oldPrice, async (newPrice, isPermanent) => {
                         priceSpan.style.opacity = '1';
                         priceSpan.style.cursor = 'pointer';
 
                         if (newPrice !== null && !isNaN(newPrice) && newPrice > 0) {
                             cart[idx].price = newPrice;
-                            let product = inventory.find(p => p.id === itemId);
-                            if (product) {
-                                product.price = newPrice;
-                                await updateInventoryPriceInSupabase(itemId, newPrice);
-                                saveInventoryToSupabase();
-                                renderProductsGrid();
-                                showSuccessToast(`✅ Price updated for ${itemName} from ₹${oldPrice} to ₹${newPrice}`);
+                            if (isPermanent) {
+                                let product = inventory.find(p => p.id === itemId);
+                                if (product) {
+                                    product.price = newPrice;
+                                    await updateInventoryPriceInSupabase(itemId, newPrice);
+                                    saveInventoryToSupabase();
+                                    renderProductsGrid();
+                                    showSuccessToast(`✅ Price permanently updated for ${itemName} to ₹${newPrice}`);
+                                }
+                            } else {
+                                showSuccessToast(`✅ Temporary price updated for ${itemName} to ₹${newPrice}`);
                             }
                             renderCart();
                         } else if (newPrice !== null) {
@@ -1838,19 +1995,23 @@
                     nameSpan.style.opacity = '0.5';
                     nameSpan.style.cursor = 'wait';
 
-                    showPriceUpdateModal(itemName, oldPrice, async (newPrice) => {
+                    showPriceUpdateModal(itemName, oldPrice, async (newPrice, isPermanent) => {
                         nameSpan.style.opacity = '1';
                         nameSpan.style.cursor = 'pointer';
 
                         if (newPrice !== null && !isNaN(newPrice) && newPrice > 0) {
                             cart[idx].price = newPrice;
-                            let product = inventory.find(p => p.id === itemId);
-                            if (product) {
-                                product.price = newPrice;
-                                await updateInventoryPriceInSupabase(itemId, newPrice);
-                                saveInventoryToSupabase();
-                                renderProductsGrid();
-                                showSuccessToast(`✅ Price updated for ${itemName} from ₹${oldPrice} to ₹${newPrice}`);
+                            if (isPermanent) {
+                                let product = inventory.find(p => p.id === itemId);
+                                if (product) {
+                                    product.price = newPrice;
+                                    await updateInventoryPriceInSupabase(itemId, newPrice);
+                                    saveInventoryToSupabase();
+                                    renderProductsGrid();
+                                    showSuccessToast(`✅ Price permanently updated for ${itemName} to ₹${newPrice}`);
+                                }
+                            } else {
+                                showSuccessToast(`✅ Temporary price updated for ${itemName} to ₹${newPrice}`);
                             }
                             renderCart();
                         } else if (newPrice !== null) {
@@ -2046,6 +2207,9 @@
             document.getElementById('dailyProfitStat').innerHTML = `₹${todayProfit.toFixed(2)}`;
             let labels = { 'today': "💰 Today's Sales", 'yesterday': "💰 Yesterday's Sales", 'weekly': "💰 Weekly Sales", 'monthly': "💰 Monthly Sales" };
             document.getElementById('dailySalesLabel').innerText = labels[filter] || "💰 Sales";
+            if (document.getElementById('dailyProfitLabel')) {
+                document.getElementById('dailyProfitLabel').innerText = (labels[filter] || "💰 Sales").replace('Sales', 'Profit').replace('💰', '💵');
+            }
         }
 
         function renderDailyTransactions() {
@@ -2121,6 +2285,45 @@
                 });
             }
 
+            let aggContainer = document.getElementById('historyDailyAggregateContainer');
+            let aggTable = document.getElementById('historyDailyAggregateTable');
+
+            if (timeFilter === 'weekly' || timeFilter === 'monthly') {
+                aggContainer.style.display = 'block';
+                let dailyData = {};
+                for (let tx of filtered) {
+                    let d = tx.date || 'Unknown';
+                    if (!dailyData[d]) dailyData[d] = { txCount: 0, amount: 0, itemsCount: 0 };
+
+                    dailyData[d].txCount++;
+                    dailyData[d].amount += (tx.total || 0);
+                    let arr = getItemsArray(tx.items);
+                    for (let item of arr) dailyData[d].itemsCount += (item.quantity || 0);
+                }
+
+                let sortedDates = Object.keys(dailyData).sort((a, b) => new Date(b) - new Date(a));
+
+                if (sortedDates.length === 0) {
+                    aggTable.innerHTML = '<div class="empty-state">No data in this period.</div>';
+                } else {
+                    let tableHTML = '<table class="cart-table" style="width:100%; text-align:left; border-collapse:collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">';
+                    tableHTML += '<thead style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;"><tr><th style="padding:12px;">Date</th><th style="padding:12px;">Transactions</th><th style="padding:12px;">Items Sold</th><th style="padding:12px;">Total Revenue</th></tr></thead><tbody>';
+                    for (let date of sortedDates) {
+                        let data = dailyData[date];
+                        tableHTML += `<tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                            <td style="padding:12px; font-weight:bold; color:#334155;">${date}</td>
+                            <td style="padding:12px; color:#475569;">${data.txCount}</td>
+                            <td style="padding:12px; color:#475569;">${data.itemsCount}</td>
+                            <td style="padding:12px; font-weight:bold; color:#10b981;">₹${data.amount}</td>
+                        </tr>`;
+                    }
+                    tableHTML += '</tbody></table>';
+                    aggTable.innerHTML = tableHTML;
+                }
+            } else {
+                if (aggContainer) aggContainer.style.display = 'none';
+            }
+
             renderTransactionsList(filtered);
         }
 
@@ -2136,7 +2339,7 @@
                 const tx = transactionsToRender[i];
                 let items = getItemsArray(tx.items);
                 let totalQty = items.reduce((s, i) => s + (i.quantity || 0), 0);
-                html += `<div class="transaction-item"><div class="transaction-header" onclick="this.nextElementSibling.classList.toggle('show')"><div><strong>#${i + 1}</strong> | ${tx.date || 'No date'} | ${escapeHtml(tx.customer || 'Unknown')}</div><div><strong>₹${tx.total || 0}</strong> (${totalQty} items) ▼</div></div><div class="transaction-details"><ul style="margin-top:8px; padding-left:20px;">${items.map(i => `<li>${escapeHtml(i.name)} x ${i.quantity} = ₹${(i.price || 0) * (i.quantity || 0)}</li>`).join('')}</ul></div></div>`;
+                html += `<div class="transaction-item"><div class="transaction-header" onclick="this.nextElementSibling.classList.toggle('show')"><div><strong>#${i + 1}</strong> | ${escapeHtml(tx.customer || 'Unknown')}</div><div><strong>₹${tx.total || 0}</strong> (${totalQty} items) ▼</div></div><div class="transaction-details"><ul style="margin-top:8px; padding-left:20px;">${items.map(i => `<li>${escapeHtml(i.name)} x ${i.quantity} = ₹${(i.price || 0) * (i.quantity || 0)}</li>`).join('')}</ul></div></div>`;
             }
             container.innerHTML = html;
         }
@@ -2176,11 +2379,26 @@
             }
 
             let totalAmount = 0, totalItems = 0;
+            let itemSummary = {};
+            
             for (let tx of filtered) {
                 totalAmount += tx.total || 0;
                 let items = getItemsArray(tx.items);
-                for (let item of items) totalItems += item.quantity || 0;
+                for (let item of items) {
+                    totalItems += item.quantity || 0;
+                    if (!itemSummary[item.name]) {
+                        itemSummary[item.name] = { count: 0, qty: 0, totalAmount: 0 };
+                    }
+                    itemSummary[item.name].count += 1;
+                    itemSummary[item.name].qty += (item.quantity || 0);
+                    itemSummary[item.name].totalAmount += (item.quantity || 0) * (item.price || 0);
+                }
             }
+
+            let itemSummaryArray = Object.keys(itemSummary).map(name => ({
+                name,
+                ...itemSummary[name]
+            })).sort((a, b) => b.qty - a.qty);
 
             const pdfHtml = `
             <!DOCTYPE html>
@@ -2193,7 +2411,8 @@
                 .summary-box { display: flex; justify-content: space-between; margin: 20px 0; gap: 15px; }
                 .summary-card { background: #f5f5f5; padding: 15px; border-radius: 10px; text-align: center; flex: 1; }
                 .summary-value { font-size: 24px; font-weight: bold; color: #2d6a4f; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                h3 { color: #2d6a4f; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 30px; }
                 th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
                 th { background: #2d6a4f; color: white; }
                 .footer { margin-top: 30px; text-align: center; font-size: 12px; }
@@ -2205,34 +2424,62 @@
                     <h2>Sales History Report</h2>
                     <div>Generated: ${new Date().toLocaleString()}</div>
                 </div>
+                
                 <div class="summary-box">
                     <div class="summary-card"><div>💰 Total Sales</div><div class="summary-value">₹${totalAmount.toFixed(2)}</div></div>
-                    <div class="summary-card"><div>📦 Total Items</div><div class="summary-value">${totalItems}</div></div>
-                    <div class="summary-card"><div>📊 Transactions</div><div class="summary-value">${filtered.length}</div></div>
+                    <div class="summary-card"><div>📦 Total Items Sold</div><div class="summary-value">${totalItems}</div></div>
+                    <div class="summary-card"><div>📊 Total Transactions</div><div class="summary-value">${filtered.length}</div></div>
                 </div>
-                <table><thead><tr><th>#</th><th>Date</th><th>Customer</th><th>Items</th><th>Qty</th><th>Total</th></tr></thead>
-                <tbody>${filtered.map((tx, idx) => {
-                let items = getItemsArray(tx.items);
-                let itemsList = items.map(i => i.name).join(', ');
-                let totalQty = items.reduce((s, i) => s + (i.quantity || 0), 0);
-                return `<tr><td>${idx + 1}</td><td>${tx.date}</td><td>${escapeHtml(tx.customer)}</td><td>${itemsList}</td><td>${totalQty}</td><td>₹${tx.total}</td></tr>`;
-            }).join('')}
-                </tbody>
-            </table>
+                
+                <h3>Itemized Summary Breakdown</h3>
+                <table>
+                    <thead><tr><th>Item Name</th><th>Times Sold</th><th>Quantity Sold</th><th>Total Revenue</th></tr></thead>
+                    <tbody>
+                        ${itemSummaryArray.length ? itemSummaryArray.map(item => `
+                        <tr>
+                            <td><strong>${escapeHtml(item.name)}</strong></td>
+                            <td>${item.count}</td>
+                            <td>${item.qty}</td>
+                            <td>₹${item.totalAmount.toFixed(2)}</td>
+                        </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;">No items found</td></tr>`}
+                    </tbody>
+                </table>
+
+                <h3>Transaction Details</h3>
+                <table>
+                    <thead><tr><th>#</th><th>Date</th><th>Customer</th><th>Items</th><th>Qty</th><th>Total</th></tr></thead>
+                    <tbody>${filtered.length ? filtered.map((tx, idx) => {
+                    let items = getItemsArray(tx.items);
+                    let itemsList = items.map(i => i.name).join(', ');
+                    let totalQty = items.reduce((s, i) => s + (i.quantity || 0), 0);
+                    return `<tr><td>${idx + 1}</td><td>${tx.date}</td><td>${escapeHtml(tx.customer)}</td><td>${itemsList}</td><td>${totalQty}</td><td>₹${tx.total}</td></tr>`;
+                }).join('') : `<tr><td colspan="6" style="text-align:center;">No transactions found</td></tr>`}
+                    </tbody>
+                </table>
                 <div class="footer"><p>My Store Management System</p></div>
             </body>
             </html>
-        `;
+            `;
 
             const printWindow = window.open('', '_blank');
-            printWindow.document.write(pdfHtml);
-            printWindow.document.close();
-            printWindow.print();
+            if (printWindow) {
+                printWindow.document.write(pdfHtml);
+                printWindow.document.close();
+                printWindow.focus();
+                
+                // Allow time for styles & layout to render before printing
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
+            } else {
+                alert("Please allow pop-ups for this site to download the PDF.");
+            }
         }
 
         function renderManageItems() {
             let search = document.getElementById('manageSearch')?.value.toLowerCase() || '';
             let category = document.getElementById('categoryFilter')?.value || '';
+            let vendor = document.getElementById('vendorFilter')?.value || '';
             let priceSort = document.getElementById('priceFilter')?.value || '';
 
             let filtered = [...inventory];
@@ -2245,6 +2492,11 @@
             // Apply category filter
             if (category) {
                 filtered = filtered.filter(i => (i.category || '').toLowerCase().trim() === category.toLowerCase().trim());
+            }
+
+            // Apply vendor filter
+            if (vendor) {
+                filtered = filtered.filter(i => (i.vendor || '').toLowerCase().trim() === vendor.toLowerCase().trim());
             }
 
             // Apply price sort
@@ -2307,6 +2559,17 @@
                     categorySelect.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
                 });
                 categorySelect.value = currentValue;
+            }
+
+            const vendors = [...new Set(inventory.map(item => item.vendor).filter(v => v))];
+            const vendorSelect = document.getElementById('vendorFilter');
+            if (vendorSelect) {
+                const currentVendorVal = vendorSelect.value;
+                vendorSelect.innerHTML = '<option value="">All Vendors</option>';
+                vendors.forEach(v => {
+                    vendorSelect.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
+                });
+                vendorSelect.value = currentVendorVal;
             }
         }
         function renderAnalytics() {
@@ -2400,6 +2663,7 @@
                 if (item) {
                     document.getElementById('modalTitle').innerHTML = '✏️ Edit Item';
                     document.getElementById('itemName').value = item.name;
+                    document.getElementById('itemVendor').value = item.vendor || '';
                     document.getElementById('itemCategory').value = item.category || '';
                     document.getElementById('itemPrice').value = item.price;
                     document.getElementById('itemBuyingPrice').value = item.buying_price || 0;
@@ -2415,6 +2679,7 @@
             } else {
                 document.getElementById('modalTitle').innerHTML = '➕ Add New Item';
                 document.getElementById('itemName').value = '';
+                document.getElementById('itemVendor').value = '';
                 document.getElementById('itemCategory').value = '';
                 document.getElementById('itemPrice').value = '';
                 document.getElementById('itemBuyingPrice').value = '';
@@ -2426,6 +2691,7 @@
 
         async function saveItem() {
             let name = document.getElementById('itemName').value.trim();
+            let vendor = document.getElementById('itemVendor').value.trim();
             let category = document.getElementById('itemCategory').value;
             let price = parseFloat(document.getElementById('itemPrice').value);
             let buyingPrice = parseFloat(document.getElementById('itemBuyingPrice').value);
@@ -2459,7 +2725,7 @@
                 document.getElementById('saveProgressText').textContent = progress + '%';
             }, 50);
 
-            let newItem = { id: editId || Date.now().toString(), name, category, price, buying_price: buyingPrice, stock, imageData: imageData || '' };
+            let newItem = { id: editId || Date.now().toString(), name, vendor, category, price, buying_price: buyingPrice, stock, imageData: imageData || '' };
 
             if (editId) {
                 let idx = inventory.findIndex(i => i.id === editId);
@@ -2676,6 +2942,7 @@
         // Filter event listeners for stock manager
         document.getElementById('manageSearch')?.addEventListener('input', () => renderManageItems());
         document.getElementById('categoryFilter')?.addEventListener('change', () => renderManageItems());
+        document.getElementById('vendorFilter')?.addEventListener('change', () => renderManageItems());
         document.getElementById('priceFilter')?.addEventListener('change', () => renderManageItems());
         document.querySelectorAll('.sidebar-item').forEach(item => item.addEventListener('click', () => navigateToPage(item.dataset.page)));
         document.getElementById('completeSaleBtn')?.addEventListener('click', completeSale);
@@ -2733,6 +3000,12 @@
 
         // Bill Event Listeners
         document.getElementById('captureBillBtn')?.addEventListener('click', async () => {
+            cameraTarget = 'bill';
+            const success = await startCamera();
+            if (success) document.getElementById('cameraModal').style.display = 'flex';
+        });
+        document.getElementById('openItemCameraBtn')?.addEventListener('click', async () => {
+            cameraTarget = 'item';
             const success = await startCamera();
             if (success) document.getElementById('cameraModal').style.display = 'flex';
         });
