@@ -1331,7 +1331,7 @@
 
         // Database Functions
         async function loadInventoryFromSupabase() {
-            const { data, error } = await supabaseClient.from('inventory').select('id, name, price, stock, category, buying_price');
+            const { data, error } = await supabaseClient.from('inventory').select('id, name, price, stock, category, vendor, buying_price');
             if (error) {
                 console.error('Error loading inventory:', error);
                 return false;
@@ -1344,6 +1344,7 @@
                     stock: item.stock,
                     buying_price: item.buying_price || 0,
                     category: item.category || 'General',
+                    vendor: item.vendor || '',
                     imageData: '' // Loaded lazily
                 }));
             }
@@ -1398,6 +1399,7 @@
                     price: item.price,
                     stock: item.stock,
                     category: item.category || 'General',
+                    vendor: item.vendor || '',
                     buying_price: item.buying_price || 0,
                     image_data: item.imageData || ''
                 };
@@ -2259,13 +2261,34 @@
 
             let filtTotal = 0;
             let filtItems = 0;
+            let filtIncome = 0;
             for (let tx of filtered) {
                 filtTotal += tx.total || 0;
                 let arr = getItemsArray(tx.items);
-                for (let item of arr) filtItems += item.quantity || 0;
+                for (let item of arr) {
+                    filtItems += item.quantity || 0;
+                    let product = inventory.find(p => p.id === item.id || p.name === item.name);
+                    let bp = product ? (product.buying_price || 0) : 0;
+                    filtIncome += (item.price - bp) * (item.quantity || 0);
+                }
             }
             document.getElementById('allTimeTotal').innerHTML = `₹${filtTotal}`;
             document.getElementById('totalItemsSoldCount').innerHTML = filtItems;
+            let finalIncome = filtIncome < 0 ? 0 : filtIncome;
+            document.getElementById('monthlyIncomeTotal').innerHTML = `₹${finalIncome.toFixed(2)}`;
+
+            const filterNames = {
+                'all': 'All Time',
+                'today': "Today's",
+                'yesterday': "Yesterday's",
+                'weekly': 'This Week',
+                'monthly': 'This Month'
+            };
+            const prefix = filterNames[timeFilter] || 'Total';
+            
+            document.getElementById('totalAmountCard').querySelector('h4').innerText = `💰 ${prefix} Amount`;
+            document.getElementById('totalItemsCard').querySelector('h4').innerText = `📦 ${prefix} Items Sold`;
+            document.getElementById('monthlyIncomeTotal').previousElementSibling.innerText = `📆 ${prefix} Revenue`;
 
             if (priceSort === 'asc') filtered.sort((a, b) => (a.total || 0) - (b.total || 0));
             if (priceSort === 'desc') filtered.sort((a, b) => (b.total || 0) - (a.total || 0));
