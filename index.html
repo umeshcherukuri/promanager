@@ -518,14 +518,25 @@
             color: transparent;
         }
 
+        @keyframes bounceIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+        }
+
         .dropdown-icon {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: #f0f0ff;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            animation: bounceIcon 2s infinite ease-in-out;
         }
 
         /* Floating Containers */
@@ -621,26 +632,36 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
+            margin-bottom: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #334155;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
-            padding: 10px;
-            border-radius: 40px;
-            border: 1px solid #ccc;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
         }
 
         .btn-group {
             display: flex;
-            gap: 12px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 15px;
         }
 
         .btn-outline {
@@ -678,16 +699,24 @@
         .filter-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
         .filter-input,
         .filter-select {
-            padding: 12px;
-            border-radius: 40px;
-            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
             flex: 1;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
         }
 
         /* Cart Table */
@@ -789,8 +818,9 @@
                 font-size: 1rem !important;
             }
             .dropdown-icon {
-                font-size: 0.6rem;
-                margin-top: 2px;
+                position: static !important;
+                margin: 4px auto 0 auto !important;
+                background: transparent !important;
             }
         }
 
@@ -842,6 +872,7 @@
         <div class="sidebar-item" data-page="manage">📦 Stock Manager</div>
         <div class="sidebar-item" data-page="deadstock">🔍 Items to Look Up</div>
         <div class="sidebar-item" data-page="mybills">🧾 My Bills</div>
+        <div class="sidebar-item" id="mobilePreviewBtn" style="color:#d946ef; font-weight:bold;">📱 Preview as Mobile</div>
     </div>
 
     <div class="app-container">
@@ -861,10 +892,12 @@
                     <div class="daily-stat-item" id="todaySalesCard">
                         <div>💰 Today's Sales</div>
                         <div class="daily-stat-value" id="todayAmount">₹0</div>
+                        <div class="dropdown-icon">▼</div>
                     </div>
                     <div class="daily-stat-item" id="todayItemsCard">
                         <div>📈 Items Sold</div>
                         <div class="daily-stat-value" id="todayUnits">0</div>
+                        <div class="dropdown-icon">▼</div>
                     </div>
                     <div class="daily-stat-item" id="todayProfitCard">
                         <div>💵 Today's Profit</div>
@@ -960,8 +993,8 @@
                 <h2>📜 Sales History</h2>
                 <select id="historyFilterSelect"
                     style="padding: 12px; border-radius: 40px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc, #e2e8f0); color: #334155; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); outline: none;">
+                    <option value="today" selected>Today</option>
                     <option value="all">All Time</option>
-                    <option value="today">Today</option>
                     <option value="yesterday">Yesterday</option>
                     <option value="weekly">Last Week</option>
                     <option value="monthly">Last Month</option>
@@ -1115,7 +1148,7 @@
         </div>
 
         <!-- Camera Modal -->
-        <div id="cameraModal" class="modal" style="display:none">
+        <div id="cameraModal" class="modal" style="display:none; z-index: 2000;">
             <div class="modal-content" style="max-width: 500px;">
                 <h3>📷 Capture Bill</h3>
                 <video id="cameraVideo" autoplay playsinline
@@ -1180,6 +1213,8 @@
                 </div>
                 <div style="color: #667eea; font-weight: bold; font-size: 1rem; margin-bottom: 5px;">📂 <span
                         id="fsItemCategory">Category</span></div>
+                <div style="color: #f59e0b; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">🏢 <span
+                        id="fsItemVendor">Vendor</span></div>
             </div>
         </div>
 
@@ -1223,6 +1258,15 @@
                 <div class="btn-group"><button id="saveItemBtn">Save</button><button id="cancelModalBtn"
                         class="btn-outline">Cancel</button></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Mobile Preview Overlay -->
+    <div id="mobilePreviewOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+        <button id="closeMobilePreviewBtn" style="position:absolute; top:20px; right:20px; background:#dc2626; color:white; border:none; padding:10px 20px; border-radius:40px; cursor:pointer; font-weight:bold; z-index:10000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">✖ Close Preview</button>
+        <div style="position:relative; width: 375px; height: 812px; border: 16px solid #222; border-radius: 40px; overflow: hidden; background: white; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:150px; height:25px; background:#222; border-bottom-left-radius:20px; border-bottom-right-radius:20px; z-index:2;"></div>
+            <iframe id="mobilePreviewFrame" style="width:100%; height:100%; border:none; padding-top: 25px; box-sizing: border-box;" src=""></iframe>
         </div>
     </div>
 
@@ -1506,11 +1550,11 @@
             });
 
             const renderBillItemHtml = (bill, idx) => `
-            <div style="flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; align-items: center; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; background: white; min-width: 120px;">
-                <img src="${bill.image_data}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="viewBillImage('${bill.image_data}')">
-                <div style="font-size: 0.7rem; color: #64748b;">📅 ${bill.date}</div>
+            <div style="flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; align-items: center; border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px; background: white; min-width: 90px; box-shadow: 0 2px 4px rgba(0,0,0,0.02)">
+                <img src="${bill.image_data}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; cursor: pointer; margin-bottom: 2px;" onclick="viewBillImage('${bill.image_data}')">
+                <div style="font-size: 0.65rem; color: #64748b; font-weight: 500;">📅 ${bill.date}</div>
                 <div style="font-weight: bold; color: #334155; font-size: 0.8rem;">💰 ₹${bill.amount || 0}</div>
-                <button class="deleteBillBtn" data-id="${bill.id}" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 20px; cursor: pointer; font-size: 0.7rem;">🗑️ Delete</button>
+                <button class="deleteBillBtn" data-id="${bill.id}" style="background: #ef4444; color: white; border: none; padding: 3px 8px; border-radius: 12px; cursor: pointer; font-size: 0.65rem; font-weight: bold; margin-top: 4px;">Delete</button>
             </div>
             `;
 
@@ -2480,23 +2524,34 @@
                     </tbody>
                 </table>
                 <div class="footer"><p>My Store Management System</p></div>
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                        }, 500);
+                    };
+                <\/script>
             </body>
             </html>
             `;
 
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(pdfHtml);
-                printWindow.document.close();
-                printWindow.focus();
-                
-                // Allow time for styles & layout to render before printing
-                setTimeout(() => {
-                    printWindow.print();
-                }, 500);
-            } else {
-                alert("Please allow pop-ups for this site to download the PDF.");
+            const blob = new Blob([pdfHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const printWindow = window.open(url, '_blank');
+            if (!printWindow) {
+                // Fallback for strict popup blockers on mobile
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Sales_Report_${new Date().toISOString().split('T')[0]}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showMsg('Report downloaded successfully!', false);
             }
+            
+            // Clean up the URL object after some time
+            setTimeout(() => { URL.revokeObjectURL(url); }, 60000);
         }
 
         function renderManageItems() {
@@ -2571,7 +2626,6 @@
 
             document.querySelectorAll('.editItemBtn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
         }
-        // Function to populate category dropdown
         function populateCategoryFilter() {
             const categories = [...new Set(inventory.map(item => item.category).filter(c => c))];
             const categorySelect = document.getElementById('categoryFilter');
@@ -2579,7 +2633,8 @@
                 const currentValue = categorySelect.value;
                 categorySelect.innerHTML = '<option value="">All Categories</option>';
                 categories.forEach(cat => {
-                    categorySelect.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+                    const safeVal = cat.replace(/"/g, '&quot;');
+                    categorySelect.innerHTML += `<option value="${safeVal}">${escapeHtml(cat)}</option>`;
                 });
                 categorySelect.value = currentValue;
             }
@@ -2590,7 +2645,8 @@
                 const currentVendorVal = vendorSelect.value;
                 vendorSelect.innerHTML = '<option value="">All Vendors</option>';
                 vendors.forEach(v => {
-                    vendorSelect.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
+                    const safeVal = v.replace(/"/g, '&quot;');
+                    vendorSelect.innerHTML += `<option value="${safeVal}">${escapeHtml(v)}</option>`;
                 });
                 vendorSelect.value = currentVendorVal;
             }
@@ -2671,6 +2727,7 @@
             document.getElementById('fsItemPrice').textContent = item.price;
             document.getElementById('fsItemStock').textContent = item.stock;
             document.getElementById('fsItemCategory').textContent = item.category || 'General';
+            document.getElementById('fsItemVendor').textContent = item.vendor || 'No Vendor';
 
             document.getElementById('fullScreenItemModal').style.display = 'flex';
         }
@@ -2948,6 +3005,7 @@
             await loadInventoryFromSupabase();
             await loadTransactionsFromSupabase();
             await loadBillsFromSupabase();
+            populateCategoryFilter();
             renderProductsGrid();
             renderCart();
             renderDailyTransactions();
@@ -2967,7 +3025,18 @@
         document.getElementById('categoryFilter')?.addEventListener('change', () => renderManageItems());
         document.getElementById('vendorFilter')?.addEventListener('change', () => renderManageItems());
         document.getElementById('priceFilter')?.addEventListener('change', () => renderManageItems());
-        document.querySelectorAll('.sidebar-item').forEach(item => item.addEventListener('click', () => navigateToPage(item.dataset.page)));
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            if(item.dataset.page) item.addEventListener('click', () => navigateToPage(item.dataset.page));
+        });
+        document.getElementById('mobilePreviewBtn')?.addEventListener('click', () => {
+            closeSidebar();
+            document.getElementById('mobilePreviewOverlay').style.display = 'flex';
+            document.getElementById('mobilePreviewFrame').src = window.location.href;
+        });
+        document.getElementById('closeMobilePreviewBtn')?.addEventListener('click', () => {
+            document.getElementById('mobilePreviewOverlay').style.display = 'none';
+            document.getElementById('mobilePreviewFrame').src = '';
+        });
         document.getElementById('completeSaleBtn')?.addEventListener('click', completeSale);
         document.getElementById('addItemBtn')?.addEventListener('click', () => openItemModal(null));
         document.getElementById('saveItemBtn')?.addEventListener('click', saveItem);
@@ -3061,7 +3130,7 @@
             try {
                 // Load data in parallel for faster loading
                 const [inventoryResult, transactionsResult, billsResult] = await Promise.all([
-                    supabaseClient.from('inventory').select('id, name, price, stock, category, buying_price, created_at'),
+                    supabaseClient.from('inventory').select('id, name, price, stock, category, vendor, buying_price, created_at'),
                     supabaseClient.from('transactions').select('*').order('created_at', { ascending: false }),
                     supabaseClient.from('bills').select('*').order('created_at', { ascending: false }).then(res => res.error ? { data: [] } : res, err => ({ data: [] }))
                 ]);
@@ -3069,14 +3138,14 @@
                 // Process inventory
                 if (inventoryResult.error || !inventoryResult.data.length) {
                     inventory = [
-                        { id: "1", name: "Parle-G", price: 10, buying_price: 8, stock: 100, category: "Snacks", imageData: "" },
-                        { id: "2", name: "Maggi", price: 14, buying_price: 11, stock: 80, category: "Snacks", imageData: "" },
-                        { id: "3", name: "Tea", price: 85, buying_price: 70, stock: 50, category: "Beverages", imageData: "" },
-                        { id: "4", name: "Sugar", price: 42, buying_price: 38, stock: 60, category: "Grocery", imageData: "" },
-                        { id: "5", name: "Milk", price: 60, buying_price: 50, stock: 40, category: "Dairy", imageData: "" },
-                        { id: "6", name: "Bread", price: 35, buying_price: 28, stock: 45, category: "Bakery", imageData: "" },
-                        { id: "7", name: "Soap", price: 45, buying_price: 38, stock: 70, category: "Hygiene", imageData: "" },
-                        { id: "8", name: "Oil", price: 115, buying_price: 100, stock: 30, category: "Grocery", imageData: "" }
+                        { id: "1", name: "Parle-G", price: 10, buying_price: 8, stock: 100, category: "Snacks", vendor: "", imageData: "" },
+                        { id: "2", name: "Maggi", price: 14, buying_price: 11, stock: 80, category: "Snacks", vendor: "", imageData: "" },
+                        { id: "3", name: "Tea", price: 85, buying_price: 70, stock: 50, category: "Beverages", vendor: "", imageData: "" },
+                        { id: "4", name: "Sugar", price: 42, buying_price: 38, stock: 60, category: "Grocery", vendor: "", imageData: "" },
+                        { id: "5", name: "Milk", price: 60, buying_price: 50, stock: 40, category: "Dairy", vendor: "", imageData: "" },
+                        { id: "6", name: "Bread", price: 35, buying_price: 28, stock: 45, category: "Bakery", vendor: "", imageData: "" },
+                        { id: "7", name: "Soap", price: 45, buying_price: 38, stock: 70, category: "Hygiene", vendor: "", imageData: "" },
+                        { id: "8", name: "Oil", price: 115, buying_price: 100, stock: 30, category: "Grocery", vendor: "", imageData: "" }
                     ];
                 } else {
                     inventory = inventoryResult.data.map(item => ({
@@ -3086,6 +3155,7 @@
                         stock: item.stock,
                         buying_price: item.buying_price || 0,
                         category: item.category || 'General',
+                        vendor: item.vendor || '',
                         created_at: item.created_at,
                         imageData: '' // Fetched via lazy loading
                     }));
